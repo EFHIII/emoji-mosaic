@@ -23,9 +23,12 @@ let canvas = document.getElementById('canvas');
 let ctx = cacl.createContext(canvas);
 
 let emojiImage = new Image();
+let bigEmojiImage = new Image();
 let emojiImageLAB;
 emojiImage.onload = loadEmoji;
-emojiImage.src = 'assets/emojis.png';
+bigEmojiImage.onload = loadBigEmoji;
+emojiImage.src = 'assets/emojis5.png';
+bigEmojiImage.src = 'assets/emojis.png';
 let emoji = [];
 let userWidth = document.getElementById('width');
 let userHeight = document.getElementById('height');
@@ -53,13 +56,14 @@ function loadEmoji() {
   ctx.resize(emojiImage.width, emojiImage.height);
   ctx.ctx.drawImage(emojiImage, 0, 0);
   let imgData = ctx.ctx.getImageData(0, 0, emojiImage.width, emojiImage.height);
+
   emojiImageLAB = cacl.imageDatatoLAB(imgData);
-  for(let y = 0; y < emojiImage.height; y += 22) {
-    for(let x = 0; x < emojiImage.width; x += 22) {
+  for(let y = 0; y < emojiImage.height; y += 5) {
+    for(let x = 0; x < emojiImage.width; x += 5) {
       let isEmoji = false;
       emojiCheck:
-      for(let X = 0; X < 22; X++) {
-        for(let Y = 0; Y < 22; Y++) {
+      for(let X = 0; X < 5; X++) {
+        for(let Y = 0; Y < 5; Y++) {
           let at = (x + X + (y + Y) * emojiImage.width) << 2;
           if(imgData.data[at + 0] !== 49) {isEmoji = true; break emojiCheck;}
           if(imgData.data[at + 1] !== 51) {isEmoji = true; break emojiCheck;}
@@ -75,6 +79,14 @@ function loadEmoji() {
     }
   }
   emojiImage = imgData;
+  ctx.resize(100, 100);
+  ctx.ctx.fillRect(0, 0, 100, 100);
+}
+
+function loadBigEmoji() {
+  ctx.resize(bigEmojiImage.width, bigEmojiImage.height);
+  ctx.ctx.drawImage(bigEmojiImage, 0, 0);
+  bigEmojiImage = ctx.ctx.getImageData(0, 0, bigEmojiImage.width, bigEmojiImage.height);
   ctx.resize(100, 100);
   ctx.ctx.fillRect(0, 0, 100, 100);
 }
@@ -97,6 +109,14 @@ function selectText(container) {
   }
 }
 
+const floydPattern = [
+  [0, 0, 0, 1, 1],
+  [0, 0, 0, 1, 1],
+  [0, 0, 0, 1, 1],
+  [2, 3, 3, 4, 4],
+  [2, 3, 3, 4, 4]
+];
+
 let drawing = 0;
 async function drawImage() {
   drawing++;
@@ -118,12 +138,12 @@ async function drawImage() {
   let w;
   let h;
   if(userHeight.checked) {
-    h = userWidth.value * 22;
-    w = Math.round(h * (img.width / img.height) / 22) * 22;
+    h = userWidth.value * 5;
+    w = Math.round(h * (img.width / img.height) / 5) * 5;
   }
   else {
-    w = userWidth.value * 22;
-    h = Math.round(w * (img.height / img.width) / 22) * 22;
+    w = userWidth.value * 5;
+    h = Math.round(w * (img.height / img.width) / 5) * 5;
   }
 
   ctx.resize(w, h);
@@ -138,10 +158,11 @@ async function drawImage() {
 
   let last = performance.now();
 
-  let txt = '';
+  let ans = [];
 
-  for(let y = 0; y < h; y += 22) {
-    for(let x = 0; x < w; x += 22) {
+  for(let y = 0; y < h; y += 5) {
+    ans.push([]);
+    for(let x = 0; x < w; x += 5) {
       let best = Infinity;
       let bestID = 0;
 
@@ -149,8 +170,8 @@ async function drawImage() {
         let e = emoji[i];
         // e.x, e.y, e.name
         let err = 0;
-        for(let Y = 0; Y < 22; Y++) {
-          for(let X = 0; X < 22; X++) {
+        for(let Y = 0; Y < 5; Y++) {
+          for(let X = 0; X < 5; X++) {
             let pos = (x + X + (y + Y) * w) * 3;
             let epos = ((e.x + X) + (e.y + Y) * emojiImage.width) * 3;
 
@@ -169,65 +190,128 @@ async function drawImage() {
 
       if(floyd) {
         // get floydError
-        let err = [0, 0, 0];
+        let err = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0]
+        ];
 
-        for(let Y = 0; Y < 22; Y++) {
-          for(let X = 0; X < 22; X++) {
+        for(let Y = 0; Y < 5; Y++) {
+          for(let X = 0; X < 5; X++) {
             let pos = (x + X + (y + Y) * w) * 3;
             let epos = ((emoji[bestID].x + X) + (emoji[bestID].y + Y) * emojiImage.width) * 3;
 
-            err[0] += imgDataLAB[pos + 0] - emojiImageLAB[epos + 0];
-            err[1] += imgDataLAB[pos + 1] - emojiImageLAB[epos + 1];
-            err[2] += imgDataLAB[pos + 2] - emojiImageLAB[epos + 2];
+            err[floydPattern[Y][X]][0] += imgDataLAB[pos + 0] - emojiImageLAB[epos + 0];
+            err[floydPattern[Y][X]][1] += imgDataLAB[pos + 1] - emojiImageLAB[epos + 1];
+            err[floydPattern[Y][X]][2] += imgDataLAB[pos + 2] - emojiImageLAB[epos + 2];
           }
         }
 
         // spread error
-        err[0] /= 22 * 22;
-        err[1] /= 22 * 22;
-        err[2] /= 22 * 22;
+        err[0][0] *= 1 / 9 * (9 / 25) / 16;
+        err[0][1] *= 1 / 9 * (9 / 25) / 16;
+        err[0][2] *= 1 / 9 * (9 / 25) / 16;
+        err[1][0] *= 1 / 6;
+        err[1][1] *= 1 / 6;
+        err[1][2] *= 1 / 6;
+        err[2][0] *= 1 / 2 * (2 / 4);
+        err[2][1] *= 1 / 2 * (2 / 4);
+        err[2][2] *= 1 / 2 * (2 / 4);
+        err[3][0] *= 1 / 4;
+        err[3][1] *= 1 / 4;
+        err[3][2] *= 1 / 4;
+        err[4][0] *= 1 / 4 * (4 / 12);
+        err[4][1] *= 1 / 4 * (4 / 12);
+        err[4][2] *= 1 / 4 * (4 / 12);
 
-        for(let Y = 0; Y < 11; Y++) {
-          for(let X = 0; X < 11; X++) {
-            let pos = (x + X + (y + Y) * w) * 3;
+        for(let Y = 0; Y < 2; Y++) {
+          let pos = (x + Y + y * w) * 3;
 
-            if(x + 22 < w) {
-              imgDataLAB[22*3 + pos + 0] += err[0] * 14 / 16;
-              imgDataLAB[22*3 + pos + 1] += err[1] * 14 / 16;
-              imgDataLAB[22*3 + pos + 2] += err[2] * 14 / 16;
+          if(x + 5 < w) {
+            imgDataLAB[(5 + 2*w)*3 + pos + 0] += err[1][0];
+            imgDataLAB[(5 + 2*w)*3 + pos + 1] += err[1][1];
+            imgDataLAB[(5 + 2*w)*3 + pos + 2] += err[1][2];
+          }
 
-              imgDataLAB[11*w*3 + 22*3 + pos + 0] += err[0] * 14 / 16;
-              imgDataLAB[11*w*3 + 22*3 + pos + 1] += err[1] * 14 / 16;
-              imgDataLAB[11*w*3 + 22*3 + pos + 2] += err[2] * 14 / 16;
+          pos = (x + (y + Y) * w) * 3;
+          if(y + 5 < h) {
+            imgDataLAB[(5*w)*3 + pos + 0] += err[2][0];
+            imgDataLAB[(5*w)*3 + pos + 1] += err[2][1];
+            imgDataLAB[(5*w)*3 + pos + 2] += err[2][2];
+
+            if(x - 5 >= 0) {
+              imgDataLAB[(-1 + 5*w)*3 + pos + 0] += err[2][0];
+              imgDataLAB[(-1 + 5*w)*3 + pos + 1] += err[2][1];
+              imgDataLAB[(-1 + 5*w)*3 + pos + 2] += err[2][2];
+            }
+          }
+
+          for(let X = 0; X < 2; X++) {
+            pos = (x + X + (y + Y) * w) * 3;
+
+            if(x + 5 < w) {
+              imgDataLAB[5*3 + pos + 0] += err[1][0];
+              imgDataLAB[5*3 + pos + 1] += err[1][1];
+              imgDataLAB[5*3 + pos + 2] += err[1][2];
+
+              imgDataLAB[(5 + 3*w)*3 + pos + 0] += err[4][0];
+              imgDataLAB[(5 + 3*w)*3 + pos + 1] += err[4][1];
+              imgDataLAB[(5 + 3*w)*3 + pos + 2] += err[4][2];
             }
 
-            if(y + 22 < h) {
-              if(x - 22 >= 0) {
-                imgDataLAB[22*w*3 - 22*3 + pos + 0] += err[0] * 12 / 16;
-                imgDataLAB[22*w*3 - 22*3 + pos + 1] += err[1] * 12 / 16;
-                imgDataLAB[22*w*3 - 22*3 + pos + 2] += err[2] * 12 / 16;
+            if(y + 5 < h) {
+              imgDataLAB[(1 + 5*w)*3 + pos + 0] += err[3][0];
+              imgDataLAB[(1 + 5*w)*3 + pos + 1] += err[3][1];
+              imgDataLAB[(1 + 5*w)*3 + pos + 2] += err[3][2];
+
+              imgDataLAB[(3 + 5*w)*3 + pos + 0] += err[4][0];
+              imgDataLAB[(3 + 5*w)*3 + pos + 1] += err[4][1];
+              imgDataLAB[(3 + 5*w)*3 + pos + 2] += err[4][2];
+
+              if(x + 5 < w) {
+                imgDataLAB[(5 + 5*w)*3 + pos + 0] += err[4][0];
+                imgDataLAB[(5 + 5*w)*3 + pos + 1] += err[4][1];
+                imgDataLAB[(5 + 5*w)*3 + pos + 2] += err[4][2];
+              }
+            }
+          }
+        }
+
+        for(let Y = 0; Y < 5; Y++) {
+          for(let X = 0; X < 5; X++) {
+            let pos = (x + X + (y + Y) * w) * 3;
+
+            if(x + 5 < w) {
+              imgDataLAB[5*3 + pos + 0] += err[0][0] * 7;
+              imgDataLAB[5*3 + pos + 1] += err[0][1] * 7;
+              imgDataLAB[5*3 + pos + 2] += err[0][2] * 7;
+            }
+
+            if(y + 5 < h) {
+              if(x - 5 >= 0) {
+                imgDataLAB[(-5 + 5*w)*3 + pos + 0] += err[0][0] * 3;
+                imgDataLAB[(-5 + 5*w)*3 + pos + 1] += err[0][1] * 3;
+                imgDataLAB[(-5 + 5*w)*3 + pos + 2] += err[0][2] * 3;
               }
 
-              imgDataLAB[22*w*3 + pos + 0] += err[0] * 10 / 16;
-              imgDataLAB[22*w*3 + pos + 1] += err[1] * 10 / 16;
-              imgDataLAB[22*w*3 + pos + 2] += err[2] * 10 / 16;
+              imgDataLAB[(5*w)*3 + pos + 0] += err[0][0] * 5;
+              imgDataLAB[(5*w)*3 + pos + 1] += err[0][1] * 5;
+              imgDataLAB[(5*w)*3 + pos + 2] += err[0][2] * 5;
 
-              imgDataLAB[22*w*3 + 11*3 + pos + 0] += err[0] * 10 / 16;
-              imgDataLAB[22*w*3 + 11*3 + pos + 1] += err[1] * 10 / 16;
-              imgDataLAB[22*w*3 + 11*3 + pos + 2] += err[2] * 10 / 16;
-
-              if(x + 22 < w) {
-                imgDataLAB[22*w*3 + 22*3 + pos + 0] += err[0] * 4 / 16;
-                imgDataLAB[22*w*3 + 22*3 + pos + 1] += err[1] * 4 / 16;
-                imgDataLAB[22*w*3 + 22*3 + pos + 2] += err[2] * 4 / 16;
+              if(x + 5 < w) {
+                imgDataLAB[(5 + 5*w)*3 + pos + 0] += err[0][0];
+                imgDataLAB[(5 + 5*w)*3 + pos + 1] += err[0][1];
+                imgDataLAB[(5 + 5*w)*3 + pos + 2] += err[0][2];
               }
             }
           }
         }
 
         // fix out-of-bounds
-        for(let Y = 0; Y < 44; Y++) {
-          for(let X = -22; X < 44; X++) {
+        for(let Y = 0; Y < 10; Y++) {
+          for(let X = -5; X < 10; X++) {
             let pos = (x + X + (y + Y) * w) * 3;
 
             if(imgDataLAB[pos + 0] < 0) imgDataLAB[pos + 0] = 0;
@@ -242,9 +326,9 @@ async function drawImage() {
         }
       }
 
-      ctx.ctx.putImageData(emojiImage, x - emoji[bestID].x, y - emoji[bestID].y, emoji[bestID].x, emoji[bestID].y, 22, 22);
+      ctx.ctx.putImageData(emojiImage, x - emoji[bestID].x, y - emoji[bestID].y, emoji[bestID].x, emoji[bestID].y, 5, 5);
 
-      txt += emoji[bestID].name;
+      ans[ans.length-1].push(bestID);
 
       if(drawing > 1) {
         drawing--;
@@ -256,11 +340,24 @@ async function drawImage() {
         last = performance.now();
       }
     }
-    txt += '\n';
   }
-  console.log(txt);
-  resultHTML.innerText = txt;
-  selectText(resultHTML);
+
+  if(w * h < 25000) {
+    let txt = ans.map(a=>a.map(b=>emoji[b].name).join('')).join('\n');
+    console.log(txt);
+    resultHTML.innerText = txt;
+    selectText(resultHTML);
+    await sleep(0);
+  }
+
+  if(w * h < 640000) {
+    ctx.resize(w/5*22, h/5*22);
+    for(let y = 0; y < ans.length; y++) {
+      for(let x = 0; x < ans[0].length; x++) {
+        ctx.ctx.putImageData(bigEmojiImage, x * 22 - emoji[ans[y][x]].x/5*22, y * 22 - emoji[ans[y][x]].y/5*22, emoji[ans[y][x]].x/5*22, emoji[ans[y][x]].y/5*22, 22, 22);
+      }
+    }
+  }
   drawing--;
 }
 

@@ -939,7 +939,7 @@ const cacl = {
           }
         }
       }
-      else {
+      else if(w > img.width || h > img.height) {
         for(let Y = 0; Y < h; Y++) {
           let pos = (x + (y + Y) * this.width) << 2;
           for(let X = 0; X < w; X++, pos += 4) {
@@ -949,6 +949,128 @@ const cacl = {
             this.imageData[pos + 0] = a * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)] * 65535 + (1 - a) * this.imageData[pos + 0];
             this.imageData[pos + 1] = a * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)] * 65535 + (1 - a) * this.imageData[pos + 1];
             this.imageData[pos + 2] = a * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)] * 65535 + (1 - a) * this.imageData[pos + 2];
+          }
+        }
+      }
+      else {
+        let szX = img.width / w;
+        let szY = img.height / h;
+
+        for(let Y = 0; Y < h; Y++) {
+          let pos = (x + (y + Y) * this.width) << 2;
+          for(let X = 0; X < w; X++, pos += 4) {
+            let total = 0;
+
+            let colR = 0;
+            let colG = 0;
+            let colB = 0;
+
+            // middle pixels
+            let xx = x + X/w*img.width;
+            let yy = y + Y/h*img.height;
+            let xb = x + (X+1)/w*img.width;
+            let yb = y + (Y+1)/h*img.height;
+
+            for(let YY = Math.ceil(yy); YY <= yb - 1; YY++) {
+              for(let XX = Math.ceil(xx); XX <= xb - 1; XX++) {
+                total++;
+
+                let ipos = (XX + (YY * img.width)) << 2;
+
+                colR += cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+                colG += cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+                colB += cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+              }
+            }
+            // edge pixels
+            let amounta = 1 - (yy % 1);
+            let amountb = yb % 1;
+            let ipos;
+
+            for(let XX = Math.ceil(xx); XX <= xx + szX - 1; XX++) {
+              if(amounta < 1) {
+                total += amounta;
+
+                ipos = (XX + (Math.floor(yy) * img.width)) << 2;
+
+                colR += amounta * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+                colG += amounta * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+                colB += amounta * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+              }
+              if(amountb < 1) {
+                total += amountb;
+
+                ipos = (XX + (Math.floor(yb) * img.width)) << 2;
+
+                colR += amountb * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+                colG += amountb * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+                colB += amountb * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+              }
+            }
+
+            let amountc = 1 - (xx % 1);
+            let amountd = xb % 1;
+            for(let YY = Math.ceil(yy); YY <= yy + szY - 1; YY++) {
+              if(amountc < 1) {
+                total += amountc;
+
+                ipos = (Math.floor(xx) + (YY * img.width)) << 2;
+
+                colR += amountc * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+                colG += amountc * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+                colB += amountc * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+              }
+              if(amountd < 1) {
+                total += amountd;
+
+                ipos = (Math.floor(xb) + (YY * img.width)) << 2;
+
+                colR += amountd * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+                colG += amountd * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+                colB += amountd * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+              }
+            }
+
+            // corner pixels
+            if(amounta < 1 && amountc < 1) {
+              total += amounta * amountc;
+              ipos = (Math.floor(xx) + (Math.floor(yy) * img.width)) << 2;
+              colR += (amounta * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+              colG += (amounta * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+              colB += (amounta * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+            }
+
+            if(amountb < 1 && amountc < 1) {
+              total += amountb * amountc;
+              ipos = (Math.floor(xx) + (Math.floor(yb) * img.width)) << 2;
+              colR += (amountb * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+              colG += (amountb * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+              colB += (amountb * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+            }
+
+            if(amounta < 1 && amountd < 1) {
+              total += amounta * amountd;
+              ipos = (Math.floor(xb) + (Math.floor(yy) * img.width)) << 2;
+              colR += (amounta * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+              colG += (amounta * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+              colB += (amounta * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+            }
+
+            if(amountb < 1 && amountd < 1) {
+              total += amountb * amountd;
+              ipos = (Math.floor(xb) + (Math.floor(yb) * img.width)) << 2;
+              colR += (amountb * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+              colG += (amountb * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+              colB += (amountb * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+            }
+
+            colR *= 65535 / total;
+            colG *= 65535 / total;
+            colB *= 65535 / total;
+
+            this.imageData[pos + 0] = colR;
+            this.imageData[pos + 1] = colG;
+            this.imageData[pos + 2] = colB;
           }
         }
       }
