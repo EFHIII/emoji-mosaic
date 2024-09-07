@@ -97,11 +97,11 @@ function selectText(container) {
   }
 }
 
-let drawing = false;
+let drawing = 0;
 async function drawImage() {
-  if(drawing) {
-    drawing = false;
-    while(!drawing) {
+  drawing++;
+  if(drawing > 1) {
+    while(drawing > 1) {
       await sleep(10);
     }
   }
@@ -246,8 +246,8 @@ async function drawImage() {
 
       txt += emoji[bestID].name;
 
-      if(!drawing) {
-        drawing = true;
+      if(drawing > 1) {
+        drawing--;
         return;
       }
 
@@ -261,7 +261,7 @@ async function drawImage() {
   console.log(txt);
   resultHTML.innerText = txt;
   selectText(resultHTML);
-  drawing = false;
+  drawing--;
 }
 
 //ctx.ctx
