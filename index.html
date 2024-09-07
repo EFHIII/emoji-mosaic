@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Emoji Mosaic</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap">
+
+    <meta property="og:title" content="Emoji Mosaic">
+    <meta property="og:description" content="Convert images into Discord emoji mosaics">
+    <meta property="og:url" content="https://efhiii.github.io/emoji-mosaic">
+
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+  </head>
+  <body>
+    <div id="FileDrop">
+      <div id="Text">Drop an image file here</div>
+      <input type="file" accept="image">
+    </div>
+    <div>
+      <input id="width" type="number" title="Width" value="14" min="1">
+    </div>
+    <div>
+      Height <input id="height" type="checkbox" title="Height">
+    </div>
+    <div>
+      Dither <input id="floyd" type="checkbox" title="Dither" checked>
+    </div>
+    <div id="result"></div>
+    <canvas id="canvas" width="600" height="300"></canvas>
+    <script type="text/javascript" src="cacl.js"></script>
+    <script type="text/javascript" src="assets/emojiNames.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+  </body>
+</html>
