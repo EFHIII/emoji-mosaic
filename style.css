@@ -163,3 +163,16 @@ canvas {
   transform: translate(0, -50%);
   text-align: center;
 }
+
+@font-face {
+  font-family: 'Emoji';
+  src: url('assets/TwitterColorEmoji-SVGinOT.ttf') format('truetype');
+}
+
+#result {
+  display: inline-block;
+  font-family: Emoji;
+  line-height: 1em;
+  background-color: rgb(49, 51, 56);
+  white-space: nowrap;
+}

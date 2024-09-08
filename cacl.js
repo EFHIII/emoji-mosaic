@@ -929,7 +929,7 @@ const cacl = {
     drawImage(img, x, y, w, h) {
       if(img.width === w && img.height === h) {
         for(let Y = 0; Y < h; Y++) {
-          let ipos = (Y * this.width) << 2;
+          let ipos = (Y * img.width) << 2;
           let pos = (x + (y + Y) * this.width) << 2;
           for(let X = 0; X < w; X++, pos += 4, ipos += 4) {
             let a = img.data[ipos + 3] / 255;
@@ -1072,6 +1072,32 @@ const cacl = {
             this.imageData[pos + 1] = colG;
             this.imageData[pos + 2] = colB;
           }
+        }
+      }
+    }
+
+    putImageData(img, x, y, ix, iy, w, h) {
+      for(let Y = 0; Y < h; Y++) {
+        let pos = (x + (y + Y) * this.width) << 2;
+        let ipos = (ix + (iy + Y) * img.width) << 2;
+        for(let X = 0; X < w; X++, pos += 4, ipos += 4) {
+          let a = img.data[ipos + 3] / 255;
+          this.imageData[pos + 0] = a * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)] * 65535 + (1 - a) * this.imageData[pos + 0];
+          this.imageData[pos + 1] = a * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)] * 65535 + (1 - a) * this.imageData[pos + 1];
+          this.imageData[pos + 2] = a * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)] * 65535 + (1 - a) * this.imageData[pos + 2];
+        }
+      }
+    }
+
+    putLABImageData(data, x, y, ix, iy, w, h) {
+      for(let Y = 0; Y < h; Y++) {
+        let pos = (x + (y + Y) * this.width) << 2;
+        let ipos = (ix + (iy + Y) * data.width) * 3;
+        for(let X = 0; X < w; pos += 4, ipos += 3, X++) {
+          let c = cacl.LABtolRGB({l: data.data[ipos], a: data.data[ipos + 1], b: data.data[ipos + 2]});
+          this.imageData[pos + 0] = c.r * 65535;
+          this.imageData[pos + 1] = c.g * 65535;
+          this.imageData[pos + 2] = c.b * 65535;
         }
       }
     }
