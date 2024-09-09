@@ -18,6 +18,9 @@
       <input type="file" accept="image/*">
     </div>
     <div>
+      <a href="about" target="_blank">About</a>
+    </div>
+    <div>
       <input id="width" type="number" title="Width" value="14" min="1">
     </div>
     <div>
@@ -30,7 +33,16 @@
       Smooth <input id="smooth" type="checkbox" title="Smooth" checked>
     </div>
     <div>
-      Insane <input id="insane" type="checkbox" title="Insane" checked>
+      Insane <input id="insane" type="checkbox" title="A very good but slow algorithm" checked>
+    </div>
+    <div>
+      Big <input id="big" type="checkbox" title="Re-render 22px emoji at the end" checked>
+    </div>
+    <div>
+      Normalize color <input id="normalize" type="checkbox" title="Reduces the color space to prevent clipping">
+    </div>
+    <div id="progressBar">
+      <div id="bar"></div>
     </div>
     <div id="result"></div><br>
     <canvas id="canvas" width="600" height="300"></canvas>

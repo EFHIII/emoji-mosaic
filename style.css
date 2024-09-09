@@ -176,3 +176,15 @@ canvas {
   background-color: rgb(49, 51, 56);
   white-space: nowrap;
 }
+
+#progressBar {
+  width: 100%;
+  background-color: rgb(49, 51, 56);
+}
+
+#bar {
+  display: none;
+  width: 100%;
+  height: 30px;
+  background-color: green;
+}

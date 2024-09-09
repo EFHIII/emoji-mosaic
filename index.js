@@ -16,9 +16,14 @@ if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
   })
 }
 
+let blackPoint = 55 / 255;
+let whitePoint = 190 / 255;
+
 let floyd = true;
 let smooth = true;
 let insane = true;
+let big = true;
+let normalize = false;
 
 let img = new Image();
 let canvas = document.getElementById('canvas');
@@ -37,17 +42,58 @@ let userHeight = document.getElementById('height');
 let userFloyd = document.getElementById('floyd');
 let userSmooth = document.getElementById('smooth');
 let userInsane = document.getElementById('insane');
+let userBig = document.getElementById('big');
+let userNormalize = document.getElementById('normalize');
 
+let progressBar = document.getElementById("bar");
 let resultHTML = document.getElementById('result');
+
+let showError = false;
+let showOrder = false;
 
 resultHTML.addEventListener('click', () => selectText(resultHTML));
 
-userWidth.addEventListener('change', _ => {
-  if (img.src !== '') drawImage();
+let lastWidth = userWidth.value * 1;
+userWidth.addEventListener('change', a => {
+  if (img.src !== '') {
+    if(Math.abs(lastWidth - userWidth.value) > 10) {
+      let w;
+      let h;
+      if (userHeight.checked) {
+        h = userWidth.value * 5;
+        w = Math.round(h * (img.width / img.height) / 5) * 5;
+      } else {
+        w = userWidth.value * 5;
+        h = Math.round(w * (img.height / img.width) / 5) * 5;
+      }
+
+      userBig.checked = w * h <= 640000;
+      big = userBig.checked;
+    }
+
+    drawImage();
+  }
+
+  lastWidth = userWidth.value * 1;
 });
 
 userHeight.addEventListener('change', _ => {
-  if (img.src !== '') drawImage();
+  if (img.src !== '') {
+    let w;
+    let h;
+    if (userHeight.checked) {
+      h = userWidth.value * 5;
+      w = Math.round(h * (img.width / img.height) / 5) * 5;
+    } else {
+      w = userWidth.value * 5;
+      h = Math.round(w * (img.height / img.width) / 5) * 5;
+    }
+
+    userBig.checked = w * h <= 640000;
+    big = userBig.checked;
+
+    drawImage();
+  }
 });
 
 userFloyd.addEventListener('change', _ => {
@@ -62,6 +108,16 @@ userSmooth.addEventListener('change', _ => {
 
 userInsane.addEventListener('change', _ => {
   insane = userInsane.checked;
+  if (img.src !== '') drawImage();
+});
+
+userBig.addEventListener('change', _ => {
+  big = userBig.checked;
+  if (img.src !== '') drawImage();
+});
+
+userNormalize.addEventListener('change', _ => {
+  normalize = userNormalize.checked;
   if (img.src !== '') drawImage();
 });
 
@@ -116,7 +172,22 @@ function loadBigEmoji() {
 }
 
 function parseFile(f) {
-  img.onload = drawImage;
+  img.onload = _ => {
+    let w;
+    let h;
+    if (userHeight.checked) {
+      h = userWidth.value * 5;
+      w = Math.round(h * (img.width / img.height) / 5) * 5;
+    } else {
+      w = userWidth.value * 5;
+      h = Math.round(w * (img.height / img.width) / 5) * 5;
+    }
+
+    userBig.checked = w * h <= 640000;
+    big = userBig.checked;
+
+    drawImage();
+  };
   img.src = URL.createObjectURL(f);
 }
 
@@ -141,14 +212,6 @@ const floydPattern = [
   [2, 3, 3, 4, 4]
 ];
 
-const insanePattern = [
-  [1, 2, 3, 2, 1],
-  [2, 4, 6, 4, 2],
-  [3, 6, 9, 6, 3],
-  [2, 4, 6, 4, 2],
-  [1, 2, 3, 2, 1],
-];
-
 let drawing = 0;
 async function drawImage() {
   if (drawing > 1) {
@@ -160,11 +223,23 @@ async function drawImage() {
       await sleep();
     }
   }
+
+  if(!img.width || !img.height) {
+    drawing--;
+    return;
+  }
+
   document.getElementById('result').innerText = '';
-  drawing = true;
+  progressBar.style.width = "0%";
+  progressBar.style.display = 'block';
 
   ctx.resize(img.width, img.height);
-  ctx.ctx.fillStyle = 'rgb(49, 51, 56)';
+  if(normalize) {
+    ctx.ctx.fillStyle = 'rgb(0, 0, 0)';
+  }
+  else {
+    ctx.ctx.fillStyle = 'rgb(49, 51, 56)';
+  }
   ctx.ctx.fillRect(0, 0, img.width, img.height);
   ctx.ctx.drawImage(img, 0, 0);
   let imgData = ctx.ctx.getImageData(0, 0, img.width, img.height);
@@ -183,10 +258,20 @@ async function drawImage() {
   ctx.resize(w, h);
 
   ctx.drawImage(imgData, 0, 0, w, h);
+
+  if(normalize) {
+    ctx.normalizeColor(blackPoint, whitePoint);
+  }
+
   ctx.draw();
 
   imgData = ctx.ctx.getImageData(0, 0, w, h);
   let imgDataLAB = cacl.imageDatatoLAB(imgData);
+  let backupImgDataLAB;
+  if(showError) {
+    backupImgDataLAB = new Float64Array(imgDataLAB.length);
+    backupImgDataLAB.set(imgDataLAB);
+  }
 
   await sleep();
 
@@ -251,6 +336,7 @@ async function drawImage() {
 
     // scan through the image for the best match pixel
     let lowestError = [Infinity];
+    let done = 0;
     do {
       lowestError = [Infinity];
       for (let y = 0; y < h / 5; y++) {
@@ -449,7 +535,16 @@ async function drawImage() {
 
         allError[Yp][Xp][0] = Infinity;
 
-        ctx.ctx.putImageData(emojiImage, X - e.x, Y - e.y, e.x, e.y, 5, 5);
+        if(showOrder) {
+          const progress = done / (w/5 * (h/5));
+          ctx.fillStyle = cacl.hslToRgb({h: progress, s: 1, l: progress});
+
+          ctx.fillRect(X, Y, 5, 5);
+          ctx.draw();
+        }
+        else {
+          ctx.ctx.putImageData(emojiImage, X - e.x, Y - e.y, e.x, e.y, 5, 5);
+        }
         ans[Yp][Xp] = lowestError[1];
       }
 
@@ -458,7 +553,11 @@ async function drawImage() {
         return;
       }
 
+      done++;
+
       if (performance.now() - last > 30) {
+
+        progressBar.style.width = (done / (w/5 * (h/5))) * 100 + "%";
         await sleep();
         last = performance.now();
       }
@@ -604,6 +703,7 @@ async function drawImage() {
           }
 
           // fix out-of-bounds
+          //*
           for (let Y = 0; Y < 10; Y++) {
             for (let X = -5; X < 10; X++) {
               const pos = (x + X + (y + Y) * w) * 3;
@@ -618,6 +718,7 @@ async function drawImage() {
               else if (imgDataLAB[pos + 2] > 12.5) imgDataLAB[pos + 2] = 12.5;
             }
           }
+          //*/
         } else if (smooth) {
           // get floydError
           let err = [0, 0, 0];
@@ -669,6 +770,7 @@ async function drawImage() {
           }
 
           // fix out-of-bounds
+          //*
           for (let Y = 0; Y < 10; Y++) {
             for (let X = -5; X < 10; X++) {
               const pos = (x + X + (y + Y) * w) * 3;
@@ -683,9 +785,19 @@ async function drawImage() {
               if (imgDataLAB[pos + 2] > 12.5) imgDataLAB[pos + 2] = 12.5;
             }
           }
+          //*/
         }
 
-        ctx.ctx.putImageData(emojiImage, x - emoji[bestID].x, y - emoji[bestID].y, emoji[bestID].x, emoji[bestID].y, 5, 5);
+        if(showOrder) {
+          const progress = (y + (x / w)) / h;
+          ctx.fillStyle = cacl.hslToRgb({h: progress, s: 1, l: progress});
+
+          ctx.fillRect(x, y, 5, 5);
+          ctx.draw();
+        }
+        else {
+          ctx.ctx.putImageData(emojiImage, x - emoji[bestID].x, y - emoji[bestID].y, emoji[bestID].x, emoji[bestID].y, 5, 5);
+        }
 
         ans[ans.length - 1].push(bestID);
 
@@ -695,6 +807,7 @@ async function drawImage() {
         }
 
         if (performance.now() - last > 30) {
+          progressBar.style.width = (y + (x / w)) / h * 100 + "%";
           await sleep();
           last = performance.now();
         }
@@ -703,23 +816,67 @@ async function drawImage() {
   }
 
   // print result
-  if (w * h < 25000) {
-    const txt = ans.map(a => a.map(b => emoji[b].name).join('')).join('\n');
-    console.log(txt);
-    resultHTML.innerText = txt;
-    selectText(resultHTML);
-    await sleep();
-  }
+  if(showOrder) {}
+  else if(showError) {
+    let local = 0;
+    let total = [0, 0, 0];
+    for(let y = 0; y < h; y += 5) {
+      for(let x = 0; x < w; x += 5) {
+        let e = emoji[ans[y/5][x/5]];
+        for(let Y = 0; Y < 5; Y++) {
+          for(let X = 0; X < 5; X++) {
+            const pos = (x + X + (y + Y) * w) * 3;
+            const epos = ((e.x + X) + (e.y + Y) * emojiImage.width) * 3;
 
-  if (w * h < 640000) {
-    ctx.resize(w / 5 * 22, h / 5 * 22);
-    for (let y = 0; y < ans.length; y++) {
-      for (let x = 0; x < ans[0].length; x++) {
-        ctx.ctx.putImageData(bigEmojiImage, x * 22 - emoji[ans[y][x]].x / 5 * 22, y * 22 - emoji[ans[y][x]].y / 5 * 22, emoji[ans[y][x]].x / 5 * 22, emoji[ans[y][x]].y / 5 * 22, 22, 22);
+            let err = Math.sqrt(
+              (backupImgDataLAB[pos + 0] - emojiImageLAB[epos + 0]) ** 2 +
+              (backupImgDataLAB[pos + 1] - emojiImageLAB[epos + 1]) ** 2 +
+              (backupImgDataLAB[pos + 2] - emojiImageLAB[epos + 2]) ** 2
+            );
+            local += err;
+
+            total[0] += backupImgDataLAB[pos + 0] - emojiImageLAB[epos + 0];
+            total[1] += backupImgDataLAB[pos + 1] - emojiImageLAB[epos + 1];
+            total[2] += backupImgDataLAB[pos + 2] - emojiImageLAB[epos + 2];
+
+            err /= 1.7320508075688772;
+
+            ctx.fillStyle = {r: err, g: err, b: err, a: 1};
+            ctx.point(X + x, Y + y);
+          }
+        }
+      }
+    }
+
+    total = Math.sqrt(total[0] ** 2 + total[1] ** 2 + total[2] ** 2);
+
+    console.log('average local error:', local / (h / 5 * (w / 5)));
+    console.log('global error:', total / (h / 5 * (w / 5)));
+    ctx.draw();
+  }
+  else {
+
+    if (w * h < 25000) {
+      const txt = ans.map(a => a.map(b => emoji[b].name).join('')).join('\n');
+      console.log(txt);
+      resultHTML.innerText = txt;
+      selectText(resultHTML);
+      await sleep();
+    }
+
+    if(big) {
+      ctx.resize(w / 5 * 22, h / 5 * 22);
+      for (let y = 0; y < ans.length; y++) {
+        for (let x = 0; x < ans[0].length; x++) {
+          ctx.ctx.putImageData(bigEmojiImage, x * 22 - emoji[ans[y][x]].x / 5 * 22, y * 22 - emoji[ans[y][x]].y / 5 * 22, emoji[ans[y][x]].x / 5 * 22, emoji[ans[y][x]].y / 5 * 22, 22, 22);
+        }
       }
     }
   }
+
   drawing--;
+
+  progressBar.style.display = 'none';
 }
 
 //ctx.ctx

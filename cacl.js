@@ -251,7 +251,7 @@ const cacl = {
       b: 200 * (f(a.y / Yn) - f(a.z / Zn)),
     };
   },
-  LABtolRGB: ({l, a, b}) => {
+  LABtolRGB: ({l, a, b}, blackClamp = false) => {
     // range:
     // l: 0 - 9
     // a: -13.2 - 13.2
@@ -272,11 +272,84 @@ const cacl = {
     const g = -0.9689307 * x + 1.8757561 * y + 0.0415175 * z;
     const bb = 0.0557101 * x + -0.2040211 * y + 1.0569959 * z;
 
+    if(blackClamp && (r < 0 || r > 1 || g < 0 || g > 1 || bb < 0 || bb > 1)) {
+      return {r: 0, g: 0, b: 0, a: 1};
+    }
+
     return {
       r: Math.max(0, Math.min(1, r)),
       g: Math.max(0, Math.min(1, g)),
       b: Math.max(0, Math.min(1, bb)),
       a: 1
+    };
+  },
+  XYZtolRGB: ({x, y, z}, blackClamp = false) => {
+    // convert CIE XYZ to lRGB
+    const r = 3.2406255 * x + -1.537208 * y + -0.4986286 * z;
+    const g = -0.9689307 * x + 1.8757561 * y + 0.0415175 * z;
+    const bb = 0.0557101 * x + -0.2040211 * y + 1.0569959 * z;
+
+    if(blackClamp && (r < 0 || r > 1 || g < 0 || g > 1 || bb < 0 || bb > 1)) {
+      return {r: 0, g: 0, b: 0, a: 1};
+    }
+
+    return {
+      r: Math.max(0, Math.min(1, r)),
+      g: Math.max(0, Math.min(1, g)),
+      b: Math.max(0, Math.min(1, bb)),
+      a: 1
+    };
+  },
+  RGBtoHSL: ({r, g, b}) => {
+    let max = Math.max(r, g, b);
+    let min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+
+    if (max === min) {
+      h = s = 0; // achromatic
+    } else {
+      let d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+
+    return { h, s, l };
+  },
+  hue2rgb: (p, q, t) => {
+    t = t % 1;
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  },
+  HSLtoRGB: ({h, s, l}) => {
+    let r, g, b;
+
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      let p = 2 * l - q;
+
+      r = cacl.hue2rgb(p, q, h + 1 / 3);
+      g = cacl.hue2rgb(p, q, h);
+      b = cacl.hue2rgb(p, q, h - 1 / 3);
+    }
+
+    return {r, g, b, a: 1};
+  },
+  lRGBtoGamut: (RGB, blackPoint, whitePoint) => {
+    return {
+      r: blackPoint.r + whitePoint.r * RGB.r,
+      g: blackPoint.g + whitePoint.g * RGB.g,
+      g: blackPoint.b + whitePoint.b * RGB.b
     };
   },
   imageDatatoLAB: (img) => {
@@ -982,13 +1055,14 @@ const cacl = {
                 colB += cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
               }
             }
+
             // edge pixels
             let amounta = 1 - (yy % 1);
             let amountb = yb % 1;
             let ipos;
 
             for(let XX = Math.ceil(xx); XX <= xx + szX - 1; XX++) {
-              if(amounta < 1) {
+              if(amounta < 1 && amounta > 0) {
                 total += amounta;
 
                 ipos = (XX + (Math.floor(yy) * img.width)) << 2;
@@ -997,7 +1071,7 @@ const cacl = {
                 colG += amounta * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
                 colB += amounta * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
               }
-              if(amountb < 1) {
+              if(amountb < 1 && amountb > 0) {
                 total += amountb;
 
                 ipos = (XX + (Math.floor(yb) * img.width)) << 2;
@@ -1011,7 +1085,7 @@ const cacl = {
             let amountc = 1 - (xx % 1);
             let amountd = xb % 1;
             for(let YY = Math.ceil(yy); YY <= yy + szY - 1; YY++) {
-              if(amountc < 1) {
+              if(amountc < 1 && amountc > 0) {
                 total += amountc;
 
                 ipos = (Math.floor(xx) + (YY * img.width)) << 2;
@@ -1020,7 +1094,7 @@ const cacl = {
                 colG += amountc * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
                 colB += amountc * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
               }
-              if(amountd < 1) {
+              if(amountd < 1 && amountd > 0) {
                 total += amountd;
 
                 ipos = (Math.floor(xb) + (YY * img.width)) << 2;
@@ -1032,7 +1106,7 @@ const cacl = {
             }
 
             // corner pixels
-            if(amounta < 1 && amountc < 1) {
+            if(amounta < 1 && amountc < 1 && amounta > 0 && amountc > 0) {
               total += amounta * amountc;
               ipos = (Math.floor(xx) + (Math.floor(yy) * img.width)) << 2;
               colR += (amounta * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
@@ -1040,7 +1114,7 @@ const cacl = {
               colB += (amounta * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
             }
 
-            if(amountb < 1 && amountc < 1) {
+            if(amountb < 1 && amountc < 1 && amountb > 0 && amountc > 0) {
               total += amountb * amountc;
               ipos = (Math.floor(xx) + (Math.floor(yb) * img.width)) << 2;
               colR += (amountb * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
@@ -1048,7 +1122,7 @@ const cacl = {
               colB += (amountb * amountc) * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
             }
 
-            if(amounta < 1 && amountd < 1) {
+            if(amounta < 1 && amountd < 1 && amounta > 0 && amountd > 0) {
               total += amounta * amountd;
               ipos = (Math.floor(xb) + (Math.floor(yy) * img.width)) << 2;
               colR += (amounta * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
@@ -1056,25 +1130,25 @@ const cacl = {
               colB += (amounta * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
             }
 
-            if(amountb < 1 && amountd < 1) {
+            if(amountb < 1 && amountd < 1 && amountb > 0 && amountd > 0) {
               total += amountb * amountd;
               ipos = (Math.floor(xb) + (Math.floor(yb) * img.width)) << 2;
-              colR += (amountb * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
-              colG += (amountb * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
-              colB += (amountb * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+                  colR += (amountb * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 0] / 255 * 16383)];
+                  colG += (amountb * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 1] / 255 * 16383)];
+                  colB += (amountb * amountd) * cacl.lRGBCache[Math.round(img.data[ipos + 2] / 255 * 16383)];
+                }
+
+                colR *= 65535 / total;
+                colG *= 65535 / total;
+                colB *= 65535 / total;
+
+                this.imageData[pos + 0] = colR;
+                this.imageData[pos + 1] = colG;
+                this.imageData[pos + 2] = colB;
+              }
             }
-
-            colR *= 65535 / total;
-            colG *= 65535 / total;
-            colB *= 65535 / total;
-
-            this.imageData[pos + 0] = colR;
-            this.imageData[pos + 1] = colG;
-            this.imageData[pos + 2] = colB;
           }
         }
-      }
-    }
 
     putImageData(img, x, y, ix, iy, w, h) {
       for(let Y = 0; Y < h; Y++) {
@@ -1098,6 +1172,42 @@ const cacl = {
           this.imageData[pos + 0] = c.r * 65535;
           this.imageData[pos + 1] = c.g * 65535;
           this.imageData[pos + 2] = c.b * 65535;
+        }
+      }
+    }
+
+    normalizeColor(blackPoint, whitePoint) {
+      let black = cacl.sRGBtolRGB({r: blackPoint, g: blackPoint, b: blackPoint, a: 1}).r;
+      let white = cacl.sRGBtolRGB({r: whitePoint, g: whitePoint, b: whitePoint, a: 1}).r;
+
+      let imageBlack = black;
+      let imageWhite = white;
+
+      for(let y = 0; y < this.height; y++) {
+        let pos = (y * this.width) << 2;
+        for(let x = 0; x < this.width; x++, pos += 4) {
+          let c = this.imageData[pos + 0] / 65535;
+          if(c < imageBlack) imageBlack = c;
+          else if(c > imageWhite) imageWhite = c;
+
+          c = this.imageData[pos + 1] / 65535;
+          if(c < imageBlack) imageBlack = c;
+          else if(c > imageWhite) imageWhite = c;
+
+          c = this.imageData[pos + 2] / 65535;
+          if(c < imageBlack) imageBlack = c;
+          else if(c > imageWhite) imageWhite = c;
+        }
+      }
+
+      if(imageBlack < blackPoint || imageWhite > whitePoint) {
+        for(let y = 0; y < this.height; y++) {
+          let pos = (y * this.width) << 2;
+          for(let x = 0; x < this.width; x++, pos += 4) {
+            this.imageData[pos + 0] = (black + ((this.imageData[pos + 0] / 65535 - imageBlack) / (imageWhite - imageBlack)) * (white - black)) * 65535;
+            this.imageData[pos + 1] = (black + ((this.imageData[pos + 1] / 65535 - imageBlack) / (imageWhite - imageBlack)) * (white - black)) * 65535;
+            this.imageData[pos + 2] = (black + ((this.imageData[pos + 2] / 65535 - imageBlack) / (imageWhite - imageBlack)) * (white - black)) * 65535;
+          }
         }
       }
     }

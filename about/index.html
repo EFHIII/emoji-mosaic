@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>About Emoji Mosaic</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap">
+
+    <meta property="og:title" content="About Emoji Mosaic">
+    <meta property="og:description" content="How Emoji Mosaic works and examples">
+    <meta property="og:url" content="https://efhiii.github.io/emoji-mosaic">
+
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+  </head>
+  <body id="bd">
+    <h1>About Emoji Mosaic</h1>
+    <p>
+      This page serves as an overview of how <a href="https://github.com/EFHIII/emoji-mosaic" target="_blank">Emoji Mosaic</a> works with example output.
+    </p>
+    <ul>
+      <li><a href="#chapter-1">Chapter 1: What does it do?</a></li>
+      <li><a href="#chapter-2">Chapter 2: How does it work?</a></li>
+    </ul>
+    <h2 id="chapter-1">Chapter 1: What does it do?</h2>
+    <p>
+      As the name sugguests, Emoji Mosaic is a tool that I created for turning
+      images into Mosaics of Emoji. One of the main focuses of the project was
+      making sure that the color was as close as possible and the edges of
+      shapes, where possible, was defined at a smaller scale than just 1 emoji.
+      By that I mean; if, for example, the left side of an emoji pixel is red,
+      then an emoji with red on the left of it should be chosen if possible.
+      By achieving this, a high fidelity can be achieved with relative low
+      emoji resolution.
+    </p>
+    <p>
+      Because not all tasks are the same, I've provided a few different modes
+      for output. To demonstrate them, I'll use a few different example images.
+      Here are the example images I'll be using:
+    </p>
+    <img src="examples/original-256/test-1.png">
+    <img src="examples/original-256/test-2.png">
+    <img src="examples/original-256/test-3.png">
+    <img src="examples/original-256/test-6.png">
+    <p>
+      The main (and, in my opinion best) mode is the one I've dubbed 'Insane'
+      (because it's insanely slow, but gives insanely good results). It
+      technically has a setting where if 'Dither' is unchecked, it will work
+      slightly differently, but it seems to be worse most, if not all, of the
+      time. Here are each of the test images using the Insane setting with
+      'Dither' checked:
+    </p>
+    <h2>height: 7 emoji</h2>
+    <img src="examples/insane-dither/test-1-7.png">
+    <img src="examples/insane-dither/test-2-7.png">
+    <img src="examples/insane-dither/test-3-7.png">
+    <h2>height: 16 emoji</h2>
+    <img src="examples/insane-dither/test-1-16.png">
+    <img src="examples/insane-dither/test-2-16.png">
+    <img src="examples/insane-dither/test-3-16.png">
+    <img src="examples/insane-dither/test-6-16.png">
+    <h2>height: 32 emoji</h2>
+    <img src="examples/insane-dither/test-1-32.png">
+    <img src="examples/insane-dither/test-2-32.png">
+    <img src="examples/insane-dither/test-3-32.png">
+    <img src="examples/insane-dither/test-6-32.png">
+    <h2>height: 64 emoji</h2>
+    <img src="examples/insane-dither/test-2-64.png">
+    <img src="examples/insane-dither/test-3-64.png">
+    <h2>height: 128 emoji</h2>
+    <img src="examples/insane-dither/test-2-128.png">
+    <img src="examples/insane-dither/test-3-128.png">
+    <h2>height: 256 emoji - Height: 512 emoji</h2>
+    <img src="examples/insane-dither/test-3-256.png" style="max-width: 768px; max-height: 1024px;">
+    <img src="examples/insane-dither/test-3-512.png" style="max-width: 768px; max-height: 1024px;">
+    <p>
+      You might notice that the color is very flat in some areas, for example in most of this part of test image 3:
+    </p>
+    <img src="examples/original-256/test-8.png">
+    <img src="examples/insane-dither/test-8-64.png">
+    <p>
+      That's due to the algorithm trying to find the best match for the
+      percieved color, but there aren't any emoji with a brighter green than
+      that. As a result, the
+      <a href="https://en.wikipedia.org/wiki/Gamut" target="_blank">color gamut</a>
+      is significantly reduced. Other than adding brighter colored emoji, the
+      best way to get around this might just be to limit the color space, which
+      is what the 'Normalize color' setting is for. This is what that gives:
+    </p>
+    <img src="examples/insane-dither/test-8-64-norm.png">
+    <p>
+      That comes with significant down sides though. By limiting the color
+      space, that makes it so output has a more muted look to it; though in the
+      above example, that was unavoidable. As another example, here's the 3rd
+      test image at 256 pixels without and with 'Normalize color':
+    </p>
+    <img src="examples/original-256/test-3.png">
+    <img src="examples/insane-dither/test-3-256.png">
+    <img src="examples/insane-dither/test-3-256-norm.png">
+    <p>
+      As illustrated, the color normalized version is able to show detail that
+      is clipping in the unnormlized version, but at the cost of less
+      overall saturation.
+    </p>
+    <p>
+      So far, I've been focusing on the 'Insane' mode, since I think it's the
+      best one, but there are a few others. The other ones are significantly
+      faster, but, in most cases, seem to give worse results.
+      Here are some example images for the other settings:
+    </p>
+    <h2></h2>
+    <h2>None</h2>
+    <img src="examples/none/test-1-7.png">
+    <img src="examples/none/test-1-16.png">
+    <img src="examples/none/test-1-32.png">
+    <img src="examples/none/test-2-16.png">
+    <img src="examples/none/test-2-32.png">
+    <img src="examples/none/test-2-64.png">
+    <img src="examples/none/test-6-16.png">
+    <img src="examples/none/test-6-32.png">
+    <h2>Dither</h2>
+    <img src="examples/dither/test-1-7.png">
+    <img src="examples/dither/test-1-16.png">
+    <img src="examples/dither/test-1-32.png">
+    <img src="examples/dither/test-2-16.png">
+    <img src="examples/dither/test-2-32.png">
+    <img src="examples/dither/test-2-64.png">
+    <img src="examples/dither/test-6-16.png">
+    <img src="examples/dither/test-6-32.png">
+    <h2>Smooth</h2>
+    <img src="examples/smooth/test-1-7.png">
+    <img src="examples/smooth/test-1-16.png">
+    <img src="examples/smooth/test-1-32.png">
+    <img src="examples/smooth/test-2-16.png">
+    <img src="examples/smooth/test-2-32.png">
+    <img src="examples/smooth/test-2-64.png">
+    <img src="examples/smooth/test-6-16.png">
+    <img src="examples/smooth/test-6-32.png">
+    <h2>Dither + Smooth</h2>
+    <img src="examples/dither-smooth/test-1-7.png">
+    <img src="examples/dither-smooth/test-1-16.png">
+    <img src="examples/dither-smooth/test-1-32.png">
+    <img src="examples/dither-smooth/test-2-16.png">
+    <img src="examples/dither-smooth/test-2-32.png">
+    <img src="examples/dither-smooth/test-2-64.png">
+    <img src="examples/dither-smooth/test-6-16.png">
+    <img src="examples/dither-smooth/test-6-32.png">
+    <h2>Insane</h2>
+    <img src="examples/insane/test-1-7.png">
+    <img src="examples/insane/test-1-16.png">
+    <img src="examples/insane/test-1-32.png">
+    <img src="examples/insane/test-2-16.png">
+    <img src="examples/insane/test-2-32.png">
+    <img src="examples/insane/test-2-64.png">
+    <img src="examples/insane/test-6-16.png">
+    <img src="examples/insane/test-6-32.png">
+    <h2>Insane + Dither</h2>
+    <img src="examples/insane-dither/test-1-7.png">
+    <img src="examples/insane-dither/test-1-16.png">
+    <img src="examples/insane-dither/test-1-32.png">
+    <img src="examples/insane-dither/test-2-16.png">
+    <img src="examples/insane-dither/test-2-32.png">
+    <img src="examples/insane-dither/test-2-64.png">
+    <img src="examples/insane-dither/test-6-16.png">
+    <img src="examples/insane-dither/test-6-32.png">
+    <h2 id="chapter-2">Chapter 2: How does it work?</h2>
+    <p>
+      The algorithm employed is not super efficient. For ever position, it
+      checks how close every possible emoji is.
+    </p>
+    <p>
+      In the case of Insane, it does so for every position without making any
+      decisions, and then chooses the one emoji in the image that is closest to
+      what it should be. It then diffuses the error to the neighboring
+      positions and re-checks every emoji for those neighbors, and goes back to
+      choosing the position with the least error.
+    </p>
+    <p>
+      For all of the others, it goes in reading order assigning the closest
+      emoji for a given position and then (exepct for in 'none' mode) diffuses
+      the error to the neighboring positions. The Dither and Smooth settings
+      modify how the error gets diffused.
+    </p>
+    <p>
+      Before anything is done, though, the entire image (and all emoji) are
+      converted into
+      <a href="https://en.wikipedia.org/wiki/CIELAB_color_space" target="_blank">CIELAB</a>
+      which makes the color distance calculations perceptually accurate.
+      Without doing that, the colors would likely look significantly off in
+      some cases and the brightness would be significantly skewed. For a deeper
+      look into color, see
+      <a href="https://efhiii.github.io/Color-Weirdness/" target="_blank">this other article of mine</a>.
+    </p>
+    <br>
+    <a href="https://github.com/EFHIII/emoji-mosaic" target="_blank">View code on GitHub</a>
+    <br><br>
+  </body>
+</html>
