@@ -24,6 +24,7 @@ let smooth = true;
 let insane = true;
 let big = true;
 let normalize = false;
+let oklab = true;
 
 let img = new Image();
 let canvas = document.getElementById('canvas');
@@ -32,6 +33,8 @@ let ctx = cacl.createContext(canvas);
 let emojiImage = new Image();
 let bigEmojiImage = new Image();
 let emojiImageLAB;
+let emojiImageCIELAB;
+let emojiImageOKLAB;
 emojiImage.onload = loadEmoji;
 bigEmojiImage.onload = loadBigEmoji;
 emojiImage.src = 'assets/emojis5.png';
@@ -44,6 +47,7 @@ let userSmooth = document.getElementById('smooth');
 let userInsane = document.getElementById('insane');
 let userBig = document.getElementById('big');
 let userNormalize = document.getElementById('normalize');
+let userOklab = document.getElementById('oklab');
 
 let progressBar = document.getElementById("bar");
 let resultHTML = document.getElementById('result');
@@ -121,13 +125,20 @@ userNormalize.addEventListener('change', _ => {
   if (img.src !== '') drawImage();
 });
 
+userOklab.addEventListener('change', _ => {
+  oklab = userOklab.checked;
+  if (img.src !== '') drawImage();
+});
+
 
 function loadEmoji() {
   ctx.resize(emojiImage.width, emojiImage.height);
   ctx.ctx.drawImage(emojiImage, 0, 0);
   let imgData = ctx.ctx.getImageData(0, 0, emojiImage.width, emojiImage.height);
 
-  emojiImageLAB = cacl.imageDatatoLAB(imgData);
+  emojiImageOKLAB = cacl.imageDatatoLAB(imgData);
+  emojiImageCIELAB = cacl.imageDatatoCIELAB(imgData);
+    
   for (let y = 0; y < emojiImage.height; y += 5) {
     for (let x = 0; x < emojiImage.width; x += 5) {
       let isEmoji = false;
@@ -229,6 +240,13 @@ async function drawImage() {
     return;
   }
 
+  if(oklab) {
+    emojiImageLAB = emojiImageOKLAB;
+  }
+  else {
+    emojiImageLAB = emojiImageCIELAB;
+  }
+
   document.getElementById('result').innerText = '';
   progressBar.style.width = "0%";
   progressBar.style.display = 'block';
@@ -266,7 +284,13 @@ async function drawImage() {
   ctx.draw();
 
   imgData = ctx.ctx.getImageData(0, 0, w, h);
-  let imgDataLAB = cacl.imageDatatoLAB(imgData);
+  let imgDataLAB;
+  if(oklab) {
+    imgDataLAB = cacl.imageDatatoLAB(imgData);
+  }
+  else {
+    imgDataLAB = cacl.imageDatatoCIELAB(imgData);
+  }
   let backupImgDataLAB;
   if(showError) {
     backupImgDataLAB = new Float64Array(imgDataLAB.length);

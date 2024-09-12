@@ -231,7 +231,7 @@ const cacl = {
       a: Math.max(0, Math.min(1, a)),
     }
   },
-  sRGBtoLAB: (c) => {
+  sRGBtoCIELAB: (c) => {
     // convert sRGB to CIE XYZ
     let {r, g, b} = cacl.sRGBtolRGB(c);
     let a = {
@@ -251,7 +251,7 @@ const cacl = {
       b: 200 * (f(a.y / Yn) - f(a.z / Zn)),
     };
   },
-  LABtolRGB: ({l, a, b}, blackClamp = false) => {
+  CIELABtolRGB: ({l, a, b}, blackClamp = false) => {
     // range:
     // l: 0 - 9
     // a: -13.2 - 13.2
@@ -281,6 +281,40 @@ const cacl = {
       g: Math.max(0, Math.min(1, g)),
       b: Math.max(0, Math.min(1, bb)),
       a: 1
+    };
+  },
+  sRGBtoLAB: (c) => {
+    // convert sRGB to lRGB
+    let {r, g, b} = cacl.sRGBtolRGB(c);
+
+    const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
+  	const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
+  	const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+
+    const l_ =  Math.cbrt(l);
+    const m_ =  Math.cbrt(m);
+    const s_ =  Math.cbrt(s);
+
+    return {
+      l: 0.2104542553*l_ + 0.7936177850*m_ - 0.0040720468*s_,
+      a: 1.9779984951*l_ - 2.4285922050*m_ + 0.4505937099*s_,
+      b: 0.0259040371*l_ + 0.7827717662*m_ - 0.8086757660*s_,
+    };
+  },
+  LABtolRGB: (c) => {
+    const l_ = c.l + 0.3963377774 * c.a + 0.2158037573 * c.b;
+    const m_ = c.l - 0.1055613458 * c.a - 0.0638541728 * c.b;
+    const s_ = c.l - 0.0894841775 * c.a - 1.2914855480 * c.b;
+
+    const l = l_*l_*l_;
+    const m = m_*m_*m_;
+    const s = s_*s_*s_;
+
+    return {
+		r: +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+		g: -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+		b: -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+    a: 1
     };
   },
   XYZtolRGB: ({x, y, z}, blackClamp = false) => {
@@ -359,6 +393,20 @@ const cacl = {
       let lpos = (y * img.width) * 3;
       for(let x = 0; x < img.width; pos += 4, lpos += 3, x++) {
         let lab = cacl.sRGBtoLAB({r: img.data[pos + 0] / 255, g: img.data[pos + 1] / 255, b: img.data[pos + 2] / 255});
+        data[lpos + 0] = lab.l;
+        data[lpos + 1] = lab.a;
+        data[lpos + 2] = lab.b;
+      }
+    }
+    return data;
+  },
+  imageDatatoCIELAB: (img) => {
+    let data = new Float64Array(3 * img.width * img.height);
+    for(let y = 0; y < img.height; y++) {
+      let pos = (y * img.width) << 2;
+      let lpos = (y * img.width) * 3;
+      for(let x = 0; x < img.width; pos += 4, lpos += 3, x++) {
+        let lab = cacl.sRGBtoCIELAB({r: img.data[pos + 0] / 255, g: img.data[pos + 1] / 255, b: img.data[pos + 2] / 255});
         data[lpos + 0] = lab.l;
         data[lpos + 1] = lab.a;
         data[lpos + 2] = lab.b;
