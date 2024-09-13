@@ -138,7 +138,7 @@ function loadEmoji() {
 
   emojiImageOKLAB = cacl.imageDatatoLAB(imgData);
   emojiImageCIELAB = cacl.imageDatatoCIELAB(imgData);
-    
+
   for (let y = 0; y < emojiImage.height; y += 5) {
     for (let x = 0; x < emojiImage.width; x += 5) {
       let isEmoji = false;
@@ -728,18 +728,37 @@ async function drawImage() {
 
           // fix out-of-bounds
           //*
-          for (let Y = 0; Y < 10; Y++) {
-            for (let X = -5; X < 10; X++) {
-              const pos = (x + X + (y + Y) * w) * 3;
 
-              if (imgDataLAB[pos + 0] < 0) imgDataLAB[pos + 0] = 0;
-              else if (imgDataLAB[pos + 0] > 9) imgDataLAB[pos + 0] = 9;
+          if(oklab) {
+            for (let Y = 0; Y < 10; Y++) {
+              for (let X = -5; X < 10; X++) {
+                const pos = (x + X + (y + Y) * w) * 3;
 
-              if (imgDataLAB[pos + 1] < -13.2) imgDataLAB[pos + 1] = -13.2;
-              else if (imgDataLAB[pos + 1] > 13.2) imgDataLAB[pos + 1] = 13.2;
+                if (imgDataLAB[pos + 0] < 0) imgDataLAB[pos + 0] = 0;
+                else if (imgDataLAB[pos + 0] > 1) imgDataLAB[pos + 0] = 1;
 
-              if (imgDataLAB[pos + 2] < -12.5) imgDataLAB[pos + 2] = -12.5;
-              else if (imgDataLAB[pos + 2] > 12.5) imgDataLAB[pos + 2] = 12.5;
+                if (imgDataLAB[pos + 1] < -0.4) imgDataLAB[pos + 1] = -0.4;
+                else if (imgDataLAB[pos + 1] > 0.4) imgDataLAB[pos + 1] = 0.4;
+
+                if (imgDataLAB[pos + 2] < -0.4) imgDataLAB[pos + 2] = -0.4;
+                else if (imgDataLAB[pos + 2] > 0.4) imgDataLAB[pos + 2] = 0.4;
+              }
+            }
+          }
+          else {
+            for (let Y = 0; Y < 10; Y++) {
+              for (let X = -5; X < 10; X++) {
+                const pos = (x + X + (y + Y) * w) * 3;
+
+                if (imgDataLAB[pos + 0] < 0) imgDataLAB[pos + 0] = 0;
+                else if (imgDataLAB[pos + 0] > 9) imgDataLAB[pos + 0] = 9;
+
+                if (imgDataLAB[pos + 1] < -13.2) imgDataLAB[pos + 1] = -13.2;
+                else if (imgDataLAB[pos + 1] > 13.2) imgDataLAB[pos + 1] = 13.2;
+
+                if (imgDataLAB[pos + 2] < -12.5) imgDataLAB[pos + 2] = -12.5;
+                else if (imgDataLAB[pos + 2] > 12.5) imgDataLAB[pos + 2] = 12.5;
+              }
             }
           }
           //*/
@@ -795,18 +814,36 @@ async function drawImage() {
 
           // fix out-of-bounds
           //*
-          for (let Y = 0; Y < 10; Y++) {
-            for (let X = -5; X < 10; X++) {
-              const pos = (x + X + (y + Y) * w) * 3;
+          if(oklab) {
+            for (let Y = 0; Y < 10; Y++) {
+              for (let X = -5; X < 10; X++) {
+                const pos = (x + X + (y + Y) * w) * 3;
 
-              if (imgDataLAB[pos + 0] < 0) imgDataLAB[pos + 0] = 0;
-              if (imgDataLAB[pos + 0] > 9) imgDataLAB[pos + 0] = 9;
+                if (imgDataLAB[pos + 0] < 0) imgDataLAB[pos + 0] = 0;
+                else if (imgDataLAB[pos + 0] > 1) imgDataLAB[pos + 0] = 1;
 
-              if (imgDataLAB[pos + 1] < -13.2) imgDataLAB[pos + 1] = -13.2;
-              if (imgDataLAB[pos + 1] > 13.2) imgDataLAB[pos + 1] = 13.2;
+                if (imgDataLAB[pos + 1] < -0.4) imgDataLAB[pos + 1] = -0.4;
+                else if (imgDataLAB[pos + 1] > 0.4) imgDataLAB[pos + 1] = 0.4;
 
-              if (imgDataLAB[pos + 2] < -12.5) imgDataLAB[pos + 2] = -12.5;
-              if (imgDataLAB[pos + 2] > 12.5) imgDataLAB[pos + 2] = 12.5;
+                if (imgDataLAB[pos + 2] < -0.4) imgDataLAB[pos + 2] = -0.4;
+                else if (imgDataLAB[pos + 2] > 0.4) imgDataLAB[pos + 2] = 0.4;
+              }
+            }
+          }
+          else {
+            for (let Y = 0; Y < 10; Y++) {
+              for (let X = -5; X < 10; X++) {
+                const pos = (x + X + (y + Y) * w) * 3;
+
+                if (imgDataLAB[pos + 0] < 0) imgDataLAB[pos + 0] = 0;
+                else if (imgDataLAB[pos + 0] > 9) imgDataLAB[pos + 0] = 9;
+
+                if (imgDataLAB[pos + 1] < -13.2) imgDataLAB[pos + 1] = -13.2;
+                else if (imgDataLAB[pos + 1] > 13.2) imgDataLAB[pos + 1] = 13.2;
+
+                if (imgDataLAB[pos + 2] < -12.5) imgDataLAB[pos + 2] = -12.5;
+                else if (imgDataLAB[pos + 2] > 12.5) imgDataLAB[pos + 2] = 12.5;
+              }
             }
           }
           //*/
