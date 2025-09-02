@@ -1268,6 +1268,7 @@ const cacl = {
           this.canvasImage.data[pos + 0] = cacl.sRGBByteCache[this.imageData[pos + 0] >> 2] + vc;
           this.canvasImage.data[pos + 1] = cacl.sRGBByteCache[this.imageData[pos + 1] >> 2] + vc;
           this.canvasImage.data[pos + 2] = cacl.sRGBByteCache[this.imageData[pos + 2] >> 2] + vc;
+          this.canvasImage.data[pos + 3] = 255; // needed for Chrome support
         }
       }
 
